@@ -29,7 +29,9 @@ nunjucks.configure(`views`, {
 });
 
 /*
- * Configure the Node MongoDB client to connect to Mongo
+ * Configure the Node MongoDB client to connect to Mongo, established a database
+ * connection and assigning the reference to the “db” variable defined on line
+ * 21
  */
 mongoClient.connect(`${dbURL}:${dbPort}`, (err, client) => {
     if (err) {
@@ -56,37 +58,57 @@ app.listen(port, HOST, () => {
 });
 
 /*
- * Express’s way of setting a variable for Nunjucks
+ * Express’s way of setting a variable. In this case, set the variable “view
+ * engine” to “njk” for Nunjucks
  */
 app.set(`view engine`, `njk`);
 
 /*
- * Middleware
+ * Express’s middleware to parse incoming, form-based request data before
+ * processing form data
  */
 app.use(bodyParser.urlencoded({extended: true}));
+
+/*
+ * Express’s middleware to parse incoming request bodies before handlers
+ */
 app.use(bodyParser.json());
+
+/*
+ * Express’s middleware to serve HTML, CSS, and JavaScript files from the
+ * included “public” folder. Note: There are no JavaScript files in the
+ * “public” folder
+ */
 app.use(express.static(`public`));
 
 /*
- * GET: Home
+ * Note:
+ *   — “req” stands for requests, which arrive from the client/browser
+ *   — “res” stands for responses, which are sent to the client/browser
+ */
+
+/*
+ * This router handles GET requests to the root of the website
  */
 app.get(`/`, (req, res) => {
     console.log(`User requested root of web site.`);
-    console.log(`Responding with index.njk via GET.`);
+    console.log(`Responding to request with file`,
+        colors.green, `index.njk`, colors.reset, `via GET.`);
 
     res.render(`index.njk`);
 });
 
 /*
- * GET: Read all DB records
+ * This router handles GET requests to http://localhost:3000/read-a-db-record/
  */
 app.get(`/read-a-db-record`, (req, res) => {
     db.collection(dbCollection).find().toArray((err, arrayObject) => {
         if (err) {
             return console.log(err);
         } else {
-            console.log(`User requested /read-a-db-record.`);
-            console.log(`Responding with read-from-database.njk via GET.\n`);
+            console.log(`User requested http://${HOST}:${port}/read-a-db-record.`);
+            console.log(`Responding to request with file`,
+                colors.green, `read-from-database.njk`, colors.reset, `via GET.\n`);
 
             res.render(`read-from-database.njk`, {mongoDBArray: arrayObject});
         }
@@ -94,14 +116,17 @@ app.get(`/read-a-db-record`, (req, res) => {
 });
 
 /*
- * GET: Create form
+ * This router handles GET requests to
+ * http://localhost:3000/create-a-db-record/
  */
 app.get(`/create-a-db-record`, (req, res) => {
     res.render(`create-a-record-in-database.njk`);
 });
 
 /*
- * POST: Create a DB record
+ * This router handles POST requests — via the Nunjucks partial
+ * “create-a-record-in-database.njk” — submitted from the form located at
+ * http://localhost:3000/create-a-db-record/
  */
 app.post(`/create-a-db-record`, (req, res) => {
     db.collection(dbCollection).insertOne(req.body, (err) => {
@@ -110,21 +135,25 @@ app.post(`/create-a-db-record`, (req, res) => {
         if (err) {
             return console.log(err);
         } else {
-            console.log(`Inserted one record into Mongo via POST.\n`);
+            console.log(
+                `Inserted one record into Mongo via an HTML form using POST.\n`);
+
             res.redirect(`/read-a-db-record`);
         }
     });
 });
 
 /*
- * GET: Update form
+ * This router handles GET requests to
+ * http://localhost:3000/update-a-db-record/
  */
 app.get(`/update-a-db-record`, (req, res) => {
     db.collection(dbCollection).find().toArray((err, arrayObject) => {
         if (err) {
             return console.log(err);
         } else {
-            console.log(`User requested /update-a-db-record`);
+            console.log(`User requested the resource ` +
+                `http://${HOST}:${port}/update-a-db-record`);
 
             res.render(`update-a-record-in-database.njk`,
                 {mongoDBArray: arrayObject});
@@ -133,7 +162,8 @@ app.get(`/update-a-db-record`, (req, res) => {
 });
 
 /*
- * GET: Delete form
+ * This router handles GET requests to
+ * http://localhost:3000/delete-a-db-record/
  */
 app.get(`/delete-a-db-record`, (req, res) => {
     db.collection(dbCollection).find().toArray((err, arrayObject) => {
@@ -141,7 +171,6 @@ app.get(`/delete-a-db-record`, (req, res) => {
             {mongoDBArray: arrayObject});
     });
 });
-
 
 function logResult(action, name, result) {
     if (!result.value) {
